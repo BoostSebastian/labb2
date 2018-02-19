@@ -1,52 +1,45 @@
-/*
-  UDPEchoServer.java
-  A simple echo server with no error handling
-*/
+import java.io.IOException;
 
-import java.io.*;
-import java.net.*;
+class Server {
 
-
-public class Server implements Runnable {
-
-    public static final int BUFSIZE= 1024;
-	public static final int MYPORT= 4950;
-	public final Socket socket;
+	/**
+	 * Creates a SocketServer object and starts the server.
+	 * 
+	 * @param args
+	 * @throws InterruptedException
+	 */
 	
-	public Server(Socket s) {
-		socket = s;
-	}
+	public static void main(String[] args) throws InterruptedException {
 
-    public static void main(String[] args) throws IOException {
+		if ( args.length == 1 && validatePort(args[0]) ) {
 
-        ServerSocket input = new ServerSocket(MYPORT);
+			
+			int portNumber = Integer.parseInt(args[0]);
+			//int portNumber = 8888;
 
-		while (true) {
+			
+			try {
+				// initializing the Socket Server
+				MultiThreadServer socket = new MultiThreadServer(portNumber);
+				socket.start();
 
-			Socket socket = input.accept();
-			Thread runningThread = new Thread(new Server(socket));
-			runningThread.start();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 
+		} else {
+			System.err.printf("invalid port");
+			System.exit(1);
 		}
-	
+
 	}
-	public void run() {
-		try {
 
-			String msgFromClient;
-			String msgToClient;
-			BufferedReader read = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			DataOutputStream stream = new DataOutputStream(socket.getOutputStream());
-			msgFromClient = read.readLine();
-			System.out.println("Msg: " + msgFromClient);
-			msgToClient = msgFromClient;
-			stream.writeBytes(msgToClient);
-			stream.close();
-
-		} catch (Exception e) {
-
-			System.out.println(e);
-
+	// Validating ports
+	public static boolean validatePort(String port){
+		if(Integer.parseInt(port) < 1024 || Integer.parseInt(port) > 65535){
+			return false;
 		}
+		return true;
 	}
+
 }
