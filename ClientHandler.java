@@ -3,7 +3,7 @@ import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.io.File;
-    import java.io.FilenameFilter;
+import java.io.FilenameFilter;
 
 public class ClientHandler implements Runnable {
 
@@ -11,7 +11,7 @@ public class ClientHandler implements Runnable {
 	private static boolean DEBUGGING = true;
 
 	private Socket client;
-  // Tjena
+
 	// input and output streams
 	private DataInputStream inputStream = null;
 	private DataOutputStream outputStream = null;
@@ -19,6 +19,8 @@ public class ClientHandler implements Runnable {
 	// buffer
 	private byte[] buf = null;
 	private int bufferSize = 1024;
+
+	List <String> maps = new ArrayList<String>();
 
 	private String rederectURL = "/webb/temp.htmlg";
 
@@ -66,39 +68,6 @@ public class ClientHandler implements Runnable {
 
 
 
-
-
-	private static File[] getFileList(String dirPath) {
-		File dir = new File(dirPath);
-
-		File[] fileList = dir.listFiles(
-
-
-			/*new FilenameFilter() {
-			public boolean accept(File dir, String name) {
-				return name.endsWith(".json");
-			}
-		}*/
-
-
-		);
-
-		for(File f : fileList){
-		
-		}
-
-		// hej
-		return fileList;
-	}
-
-
-
-
-
-
-
-
-
 	private void readResponse() throws IOException, InterruptedException {
 
 		try {
@@ -133,88 +102,134 @@ public class ClientHandler implements Runnable {
 
 
 
-			//////////////////////////////////////////
-			//////////////////////////////////////////
-			//////////////////////////////////////////
-
-			try {
-
-				File[] fileList = getFileList("/Users/sebastianthorngren/Desktop/labb2");
-
-				for(File file_ : fileList) {
-					System.out.println(file_.getName());
-				}
-
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-			//////////////////////////////////////////
-			//////////////////////////////////////////
-			//////////////////////////////////////////
 
 
 
+			
 
+			// Check for GET 
+			if (requestHeader.split("\n")[1].contains("GET")) {
 
-			// Check for GET
-			if (requestHeader.split("\n")[0].contains("GET") && checkURL(file)) {
+				if(checkURL(file)){
 
-				String path = buildURL(file); 							// build url to obtain file
-				String type = checkTypeOfFile(path); 					// check type of file
-				String ext = getFileExtension(path);					// extension
-				//boolean _root = new File(path).isDirectory();			// check if root directory
+					String path = buildURL(file); 									// build url to obtain file
+					String type = checkTypeOfFile(path); 							// check type of file
+					String ext = getFileExtension(path);							// extension
+					//boolean _root = new File(path).isDirectory();					// check if root directory
 
-				if(restrictedDirectory(path)) {
+					if(restrictedDirectory(path)) {
 
-					if (type == "html"){
+						if (type == "html"){
 
-						// Get the correct page
-						constructResponseHeader(200, sb, "text/" + ext);		// build header
-						response.write(sb.toString());							// send header
-						response.write(getData(path));							// send data
-						sb.setLength(0);				 						// reset
-						response.flush();										// flush
+							// Get the correct page
+							constructResponseHeader(200, sb, "text/" + ext);		// build header
+							response.write(sb.toString());							// send header
+							response.write(getData(path));							// send data
+							sb.setLength(0);				 						// reset
+							response.flush();										// flush
+		
+						} else if (type == "image") {
 
-					} else if (type == "image") {
-
-						constructResponseHeader(200, sb, "image/" + ext);		// build header
-						response.write(sb.toString());							// send header
-
-						File img_file = new File(path);
-						FileInputStream fis = new FileInputStream(img_file);
-						byte[] data = new byte[(int) img_file.length()];
-						fis.read(data);
-						fis.close();
-
-						DataOutputStream binaryOut = new DataOutputStream(outputStream);
-						binaryOut.writeBytes("HTTP/1.0 200 OK\r\n");
-						binaryOut.writeBytes("Content-Type: image/png\r\n");
-						binaryOut.writeBytes("Content-Length: " + data.length);
-						binaryOut.writeBytes("\r\n\r\n");
-						binaryOut.write(data);
-
-						binaryOut.close();
-
+							constructResponseHeader(200, sb, "image/" + ext);		// build header
+							response.write(sb.toString());							// send header
+		
+							File img_file = new File(path);
+							FileInputStream fis = new FileInputStream(img_file);
+							byte[] data = new byte[(int) img_file.length()];
+							fis.read(data);
+							fis.close();
+		
+							DataOutputStream binaryOut = new DataOutputStream(outputStream);
+							binaryOut.writeBytes("HTTP/1.0 200 OK\r\n");
+							binaryOut.writeBytes("Content-Type: image/png\r\n");
+							binaryOut.writeBytes("Content-Length: " + data.length);
+							binaryOut.writeBytes("\r\n\r\n");
+							binaryOut.write(data);
+		
+							binaryOut.close();
+		
+						} else {
+							System.out.println("Do not support this format");
+						}
 
 					} else {
-						System.out.println("Do not support this format");
+
+						// Enter the forbidden response 
+						// 403 page not found
+						constructResponseHeader(403, sb, "");
+						response.write(sb.toString());
+						sb.setLength(0);
+						response.flush();
+
 					}
 
-				} else {
+				} else { // SEE IF WE CAN FIND THE FILE
 
-					// Enter the forbidden response
-					// 403 page not found
-					constructResponseHeader(403, sb, "");
-					response.write(sb.toString());
-					sb.setLength(0);
-					response.flush();
+
+
+
+
+
+
+
+
+
+
+
+
+
+					try {
+				
+						File[] fileList = getFileList("/Users/sebastianthorngren/Desktop/labb2", "temp.html");
+		
+						for(File file_ : fileList) {
+							//System.out.println(file_.getName());
+						}
+		
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+
+
+
+
+
+
+
+
+
+
 
 				}
 
+				
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				
+
+				
 
 			// Check for PUT
 			} else if (requestHeader.split("\n")[0].contains("PUT") && checkURL(file)) {
@@ -258,10 +273,62 @@ public class ClientHandler implements Runnable {
 
 
 
+	private File[] getFileList(String dirPath, String name) {
+		
+		File dir = new File(dirPath);   
+		File[] fileList = dir.listFiles();
+
+
+		return fileList;
+	}
+
+	private String url(){
 
 
 
 
+
+
+		return "";
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
 
 
 	// Build a Response Header
@@ -325,7 +392,7 @@ public class ClientHandler implements Runnable {
 
 	// Get the data of a file like html
 	private static String getData(String file) {
-
+		
 		File myFile = new File(file);
 		String responseToClient = "";
 		BufferedReader reader;
@@ -339,7 +406,7 @@ public class ClientHandler implements Runnable {
 
 		}
 
-
+		
 
 		try {
 			reader = new BufferedReader(new FileReader(myFile));
@@ -376,7 +443,7 @@ public class ClientHandler implements Runnable {
 		}
 		else if ((string.toLowerCase().contains("png") || (string.toLowerCase().contains("jpg")) || (string.toLowerCase().contains("jpeg")))){
 			return "image";
-		}
+		} 
 		else return "";
 
 	}
