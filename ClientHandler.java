@@ -108,7 +108,7 @@ public class ClientHandler implements Runnable {
 			
 
 			// Check for GET 
-			if (requestHeader.split("\n")[1].contains("GET")) {
+			if (requestHeader.split("\n")[2].contains("GET")) {
 
 				if(checkURL(file)){
 
@@ -278,20 +278,23 @@ public class ClientHandler implements Runnable {
 		File dir = new File(dirPath);   
 		File[] fileList = dir.listFiles();
 
+		if(dirPath.contains(name)){
+
+		} else {
+
+			for(File f : fileList){
+
+				
+	
+			}
+
+		}
+
+		
+
 
 		return fileList;
 	}
-
-	private String url(){
-
-
-
-
-
-
-		return "";
-	}
-
 
 
 
