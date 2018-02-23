@@ -1,8 +1,9 @@
 import java.io.*;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Arrays;
+import java.util.*;
+import java.io.File;
+    import java.io.FilenameFilter;
 
 public class ClientHandler implements Runnable {
 
@@ -18,6 +19,8 @@ public class ClientHandler implements Runnable {
 	// buffer
 	private byte[] buf = null;
 	private int bufferSize = 1024;
+
+	private String rederectURL = "/webb/temp.htmlg";
 
 	public ClientHandler(Socket client) {
 
@@ -41,23 +44,10 @@ public class ClientHandler implements Runnable {
 	@Override
 	public void run() {
 
-
-
 		try {
-
-
-
-
 
 			System.out.println("Thread started with name: " + Thread.currentThread().getName());
 			readResponse();
-
-
-
-
-
-
-
 
 		} catch (IOException e) {
 
@@ -72,8 +62,31 @@ public class ClientHandler implements Runnable {
 
 		}
 
-		
 	}
+
+
+
+
+
+	private static File[] getFileList(String dirPath) {
+		File dir = new File(dirPath);   
+
+		File[] fileList = dir.listFiles(
+			/*new FilenameFilter() {
+			public boolean accept(File dir, String name) {
+				return name.endsWith(".json");
+			}
+		}*/);
+		return fileList;
+	}
+
+
+
+
+
+
+
+
 
 	private void readResponse() throws IOException, InterruptedException {
 
@@ -89,15 +102,16 @@ public class ClientHandler implements Runnable {
 			// Read stream
 			while (!temp.equals("")) {
 				temp = request.readLine();
-				System.out.println(temp);
+				//System.out.println(temp);
 				requestHeader += temp + "\n";
 			}
 
 			// Get the method from HTTP header
-			StringBuilder sb = new StringBuilder();															// stringbuilder to obtain page
-			String file = requestHeader.split("\n")[0].split(" ")[1].split("/")[1];							// header split to obtain file
+			StringBuilder sb = new StringBuilder();						// stringbuilder to obtain page
+			String file = requestHeader.split("\n")[0].split(" ")[1];	// header split to obtain filepath
 
 			if(DEBUGGING){
+				System.out.println();
 				System.out.println("------SPLITED FILES-------");
 				System.out.println();
 				System.out.println(Arrays.toString(requestHeader.split("\n")[0].split(" ")));					// print array
@@ -105,17 +119,93 @@ public class ClientHandler implements Runnable {
 				System.out.println();
 			}
 
+
+
+
+			//////////////////////////////////////////
+			//////////////////////////////////////////
+			//////////////////////////////////////////
+
+			try {
+				
+				File[] fileList = getFileList("/Users/sebastianthorngren/Desktop/labb2");
+
+				for(File file_ : fileList) {
+					System.out.println(file_.getName());
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			//////////////////////////////////////////
+			//////////////////////////////////////////
+			//////////////////////////////////////////
+
+
+
+			
+
 			// Check for GET 
 			if (requestHeader.split("\n")[0].contains("GET") && checkURL(file)) {
 
-				// Get the correct page
-				constructResponseHeader(200, sb);
-				response.write(sb.toString());
-				response.write(getData(file));
-				sb.setLength(0);
-				response.flush();
+				String path = buildURL(file); 							// build url to obtain file
+				String type = checkTypeOfFile(path); 					// check type of file
+				String ext = getFileExtension(path);					// extension
+				boolean root = new File(path).isDirectory();			// check if root directory
 
-			// CHeck for PUT
+				if(restrictedDirectory(path) && root) {
+
+					if (type == "html"){
+
+						// Get the correct page
+						constructResponseHeader(200, sb, "text/" + ext);		// build header
+						response.write(sb.toString());							// send header
+						response.write(getData(path));							// send data
+						sb.setLength(0);				 						// reset
+						response.flush();										// flush
+	
+					} else if (type == "image") {
+
+						constructResponseHeader(200, sb, "image/" + ext);		// build header
+						response.write(sb.toString());							// send header
+	
+						File img_file = new File(path);
+						FileInputStream fis = new FileInputStream(img_file);
+						byte[] data = new byte[(int) img_file.length()];
+						fis.read(data);
+						fis.close();
+	
+						DataOutputStream binaryOut = new DataOutputStream(outputStream);
+						binaryOut.writeBytes("HTTP/1.0 200 OK\r\n");
+						binaryOut.writeBytes("Content-Type: image/png\r\n");
+						binaryOut.writeBytes("Content-Length: " + data.length);
+						binaryOut.writeBytes("\r\n\r\n");
+						binaryOut.write(data);
+	
+						binaryOut.close();
+	
+	
+					} else {
+						System.out.println("Do not support this format");
+					}
+
+				} else {
+
+					// Enter the forbidden response 
+					// 403 page not found
+					constructResponseHeader(403, sb, "");
+					response.write(sb.toString());
+					sb.setLength(0);
+					response.flush();
+
+				}
+
+				
+
+				
+
+			// Check for PUT
 			} else if (requestHeader.split("\n")[0].contains("PUT") && checkURL(file)) {
 
 				System.out.println("Do not support PUT");
@@ -124,7 +214,7 @@ public class ClientHandler implements Runnable {
 
 				// Enter the error code
 				// 404 page not found
-				constructResponseHeader(404, sb);
+				constructResponseHeader(404, sb, "");
 				response.write(sb.toString());
 				sb.setLength(0);
 				response.flush();
@@ -146,30 +236,23 @@ public class ClientHandler implements Runnable {
 
 
 
-	// Check the URL
-	private static boolean checkURL(String file) {
-
-		File myFile = new File(file);
-
-		if(DEBUGGING){
-			System.out.println("----------FILE------------");
-			System.out.println();
-			System.out.println("name: " + file + " / exist: " + (myFile.exists() && !myFile.isDirectory()));
-			System.out.println();
-		}
-
-		
-
-		return myFile.exists() && !myFile.isDirectory();
-
-	}
 
 
 
 
 
-	// Response Header
-	private static void constructResponseHeader(int responseCode, StringBuilder sb) {
+
+
+
+
+
+
+
+	
+
+
+	// Build a Response Header
+	private static void constructResponseHeader(int responseCode, StringBuilder sb, String fileType) {
 
 		if (responseCode == 200) {
 
@@ -186,18 +269,48 @@ public class ClientHandler implements Runnable {
 			sb.append("Server:localhost\r\n");
 			sb.append("\r\n");
 
+		} else if (responseCode == 403) {
+
+			sb.append("HTTP/1.1 403 Forbidden response\r\n");
+			sb.append("Date:" + getTimeStamp() + "\r\n");
+			sb.append("Server:localhost\r\n");
+			sb.append("\r\n");
+
+		}
+
+	}
+
+	// Check if we enter restricted area
+	private static Boolean restrictedDirectory(String string){
+
+		if(string.toLowerCase().contains("restricted")){
+			return false;
+		} else {
+			return true;
 		}
 
 	}
 
 
+	// Build URL to obtain files in other directories
+	private static String buildURL(String file){
+
+		String [] urlParts = file.split("/");
+
+		StringBuilder my_url = new StringBuilder();
+		for(int i = 1; i < urlParts.length; i++){
+			my_url.append(urlParts[i]);
+			if(i != urlParts.length - 1) my_url.append("/");
+		}
+
+		return my_url.toString();
+
+	}
 
 
-
-
-
+	// Get the data of a file like html
 	private static String getData(String file) {
-
+		
 		File myFile = new File(file);
 		String responseToClient = "";
 		BufferedReader reader;
@@ -211,6 +324,8 @@ public class ClientHandler implements Runnable {
 
 		}
 
+		
+
 		try {
 			reader = new BufferedReader(new FileReader(myFile));
 			String line = null;
@@ -220,16 +335,13 @@ public class ClientHandler implements Runnable {
 				responseToClient += line;
 			}
 
-			responseToClient += line;
+			responseToClient += line; // last line
 
 			if(DEBUGGING){
-
 				System.out.println("---------RESPONSE---------");
 				System.out.println();
 				System.out.println(responseToClient);
 				System.out.println();
-
-	
 			}
 
 			reader.close();
@@ -241,18 +353,43 @@ public class ClientHandler implements Runnable {
 	}
 
 
+	// Check type of file
+	private static String checkTypeOfFile(String string){
+
+		if(string.toLowerCase().contains("html") || (string.toLowerCase().contains("htm"))){
+			return "html";
+		}
+		else if ((string.toLowerCase().contains("png") || (string.toLowerCase().contains("jpg")) || (string.toLowerCase().contains("jpeg")))){
+			return "image";
+		} 
+		else return "";
+
+	}
 
 
+	// Check the URL if it exist a file where it is pointing
+	private static boolean checkURL(String file) {
+
+		File myFile = new File(buildURL(file));
+
+		if(DEBUGGING){
+			System.out.println("----------FILE------------");
+			System.out.println();
+			System.out.println("name: " + file + " / exist: " + (myFile.exists() && !myFile.isDirectory()) + " / is root: " + myFile.isDirectory());
+			System.out.println();
+		}
+
+		return myFile.exists() && !myFile.isDirectory();
+
+	}
 
 
-
-
-
-
-
-
-
-
+	// Return the extension of a file
+	private static String getFileExtension(String file) {
+        if(file.lastIndexOf(".") != -1 && file.lastIndexOf(".") != 0)
+        return file.substring(file.lastIndexOf(".")+1);
+        else return "";
+    }
 
 
 	// TimeStamp
