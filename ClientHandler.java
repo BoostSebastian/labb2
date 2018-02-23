@@ -152,9 +152,9 @@ public class ClientHandler implements Runnable {
 				String path = buildURL(file); 							// build url to obtain file
 				String type = checkTypeOfFile(path); 					// check type of file
 				String ext = getFileExtension(path);					// extension
-				boolean root = new File(path).isDirectory();			// check if root directory
+				//boolean _root = new File(path).isDirectory();			// check if root directory
 
-				if(restrictedDirectory(path) && root) {
+				if(restrictedDirectory(path)) {
 
 					if (type == "html"){
 
