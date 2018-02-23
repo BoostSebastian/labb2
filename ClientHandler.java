@@ -72,11 +72,24 @@ public class ClientHandler implements Runnable {
 		File dir = new File(dirPath);   
 
 		File[] fileList = dir.listFiles(
+
+
 			/*new FilenameFilter() {
 			public boolean accept(File dir, String name) {
 				return name.endsWith(".json");
 			}
-		}*/);
+		}*/
+		
+		
+		);
+
+		for(File f : fileList){
+			if(f.cont){
+
+			}
+		}
+
+		// hej
 		return fileList;
 	}
 
