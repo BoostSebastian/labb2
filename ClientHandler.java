@@ -84,9 +84,7 @@ public class ClientHandler implements Runnable {
 		);
 
 		for(File f : fileList){
-			if(f.cont){
-
-			}
+		
 		}
 
 		// hej
@@ -115,7 +113,7 @@ public class ClientHandler implements Runnable {
 			// Read stream
 			while (!temp.equals("")) {
 				temp = request.readLine();
-				//System.out.println(temp);
+				System.out.println(temp);
 				requestHeader += temp + "\n";
 			}
 
@@ -242,6 +240,8 @@ public class ClientHandler implements Runnable {
 
 		} catch (Exception e) {
 
+
+
 		}
 
 	}
@@ -272,7 +272,9 @@ public class ClientHandler implements Runnable {
 			sb.append("HTTP/1.1 200 OK\r\n");
 			sb.append("Date:" + getTimeStamp() + "\r\n");
 			sb.append("Server:localhost\r\n");
-			sb.append("Content-Type: text/html\r\n");
+			sb.append("Content-Type: ");
+			sb.append(fileType);
+			sb.append("\r\n");
 			sb.append("Connection: Closed\r\n\r\n");
 
 		} else if (responseCode == 404) {
