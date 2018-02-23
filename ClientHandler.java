@@ -11,7 +11,7 @@ public class ClientHandler implements Runnable {
 	private static boolean DEBUGGING = true;
 
 	private Socket client;
-
+  // Tjena
 	// input and output streams
 	private DataInputStream inputStream = null;
 	private DataOutputStream outputStream = null;
@@ -69,7 +69,7 @@ public class ClientHandler implements Runnable {
 
 
 	private static File[] getFileList(String dirPath) {
-		File dir = new File(dirPath);   
+		File dir = new File(dirPath);
 
 		File[] fileList = dir.listFiles(
 
@@ -79,8 +79,8 @@ public class ClientHandler implements Runnable {
 				return name.endsWith(".json");
 			}
 		}*/
-		
-		
+
+
 		);
 
 		for(File f : fileList){
@@ -140,7 +140,7 @@ public class ClientHandler implements Runnable {
 			//////////////////////////////////////////
 
 			try {
-				
+
 				File[] fileList = getFileList("/Users/sebastianthorngren/Desktop/labb2");
 
 				for(File file_ : fileList) {
@@ -157,9 +157,9 @@ public class ClientHandler implements Runnable {
 
 
 
-			
 
-			// Check for GET 
+
+			// Check for GET
 			if (requestHeader.split("\n")[0].contains("GET") && checkURL(file)) {
 
 				String path = buildURL(file); 							// build url to obtain file
@@ -177,35 +177,35 @@ public class ClientHandler implements Runnable {
 						response.write(getData(path));							// send data
 						sb.setLength(0);				 						// reset
 						response.flush();										// flush
-	
+
 					} else if (type == "image") {
 
 						constructResponseHeader(200, sb, "image/" + ext);		// build header
 						response.write(sb.toString());							// send header
-	
+
 						File img_file = new File(path);
 						FileInputStream fis = new FileInputStream(img_file);
 						byte[] data = new byte[(int) img_file.length()];
 						fis.read(data);
 						fis.close();
-	
+
 						DataOutputStream binaryOut = new DataOutputStream(outputStream);
 						binaryOut.writeBytes("HTTP/1.0 200 OK\r\n");
 						binaryOut.writeBytes("Content-Type: image/png\r\n");
 						binaryOut.writeBytes("Content-Length: " + data.length);
 						binaryOut.writeBytes("\r\n\r\n");
 						binaryOut.write(data);
-	
+
 						binaryOut.close();
-	
-	
+
+
 					} else {
 						System.out.println("Do not support this format");
 					}
 
 				} else {
 
-					// Enter the forbidden response 
+					// Enter the forbidden response
 					// 403 page not found
 					constructResponseHeader(403, sb, "");
 					response.write(sb.toString());
@@ -214,9 +214,9 @@ public class ClientHandler implements Runnable {
 
 				}
 
-				
 
-				
+
+
 
 			// Check for PUT
 			} else if (requestHeader.split("\n")[0].contains("PUT") && checkURL(file)) {
@@ -261,7 +261,7 @@ public class ClientHandler implements Runnable {
 
 
 
-	
+
 
 
 	// Build a Response Header
@@ -323,7 +323,7 @@ public class ClientHandler implements Runnable {
 
 	// Get the data of a file like html
 	private static String getData(String file) {
-		
+
 		File myFile = new File(file);
 		String responseToClient = "";
 		BufferedReader reader;
@@ -337,7 +337,7 @@ public class ClientHandler implements Runnable {
 
 		}
 
-		
+
 
 		try {
 			reader = new BufferedReader(new FileReader(myFile));
@@ -374,7 +374,7 @@ public class ClientHandler implements Runnable {
 		}
 		else if ((string.toLowerCase().contains("png") || (string.toLowerCase().contains("jpg")) || (string.toLowerCase().contains("jpeg")))){
 			return "image";
-		} 
+		}
 		else return "";
 
 	}
