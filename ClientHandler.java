@@ -20,8 +20,6 @@ public class ClientHandler implements Runnable {
 	private byte[] buf = null;
 	private int bufferSize = 1024;
 
-	List <String> maps = new ArrayList<String>();
-
 	private String rederectURL = "/webb/temp.htmlg";
 
 	public ClientHandler(Socket client) {
@@ -101,23 +99,18 @@ public class ClientHandler implements Runnable {
 
 
 
-
-
-
-
-			
-
 			// Check for GET 
-			if (requestHeader.split("\n")[2].contains("GET")) {
+			if (requestHeader.split("\n")[0].contains("GET")) {
 
-				if(checkURL(file)){
+				String path = buildURL(file); 									// build url to obtain file
+				String type = checkTypeOfFile(path); 							// check type of file
+				String ext = getFileExtension(path);							// extension
+				//boolean _root = new File(path).isDirectory();					// check if root directory
 
-					String path = buildURL(file); 									// build url to obtain file
-					String type = checkTypeOfFile(path); 							// check type of file
-					String ext = getFileExtension(path);							// extension
-					//boolean _root = new File(path).isDirectory();					// check if root directory
+				
+				if(restrictedDirectory(path)) {
 
-					if(restrictedDirectory(path)) {
+					if(checkURL(file)){
 
 						if (type == "html"){
 
@@ -152,85 +145,67 @@ public class ClientHandler implements Runnable {
 							System.out.println("Do not support this format");
 						}
 
-					} else {
+					
 
-						// Enter the forbidden response 
-						// 403 page not found
-						constructResponseHeader(403, sb, "");
-						response.write(sb.toString());
-						sb.setLength(0);
-						response.flush();
+					} else { // SEE IF WE CAN FIND THE FILE
 
-					}
+						String [] testObj = path.split("/");
+						String test = testObj[testObj.length-1];
 
-				} else { // SEE IF WE CAN FIND THE FILE
+						File oldPath = new File(path);
+						String p =  oldPath.getAbsolutePath().split("labb2")[0] + "labb2";
 
+						System.out.println(p);
 
+						try {
+					
+							String newPathReserected = getFileList("/Users/sebastianthorngren/Desktop/labb2", test);
+							//System.out.println(newPathReserected); newPathReserected.contains(test)
 
+							if(path.contains("rederect")){
 
+								System.out.println("yes");
 
-
-
-
-
-
-
-
-
-
-					try {
+								// 302 redirected
+								constructResponseHeader(302, sb, "");
+								response.write(sb.toString());
+								sb.setLength(0);
+								response.flush();
 				
-						File[] fileList = getFileList("/Users/sebastianthorngren/Desktop/labb2", "temp.html");
-		
-						for(File file_ : fileList) {
-							//System.out.println(file_.getName());
+
+
+							} else {
+
+								System.out.println("no");
+
+								// Enter the error code
+								// 404 page not found
+								constructResponseHeader(404, sb, "");
+								response.write(sb.toString());
+								sb.setLength(0);
+								response.flush();
+
+							}
+
+			
+						} catch (Exception e) {
+							e.printStackTrace();
 						}
-		
-					} catch (Exception e) {
-						e.printStackTrace();
+
+
 					}
 
+				} else {
 
-
-
-
-
-
-
-
-
-
+					// Enter the forbidden response 
+					// 403 page not found
+					constructResponseHeader(403, sb, "");
+					response.write(sb.toString());
+					sb.setLength(0);
+					response.flush();
 
 				}
-
-				
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-				
-
-				
-
+			
 			// Check for PUT
 			} else if (requestHeader.split("\n")[0].contains("PUT") && checkURL(file)) {
 
@@ -263,75 +238,55 @@ public class ClientHandler implements Runnable {
 
 
 
-
-
-
-
-
-
-
-
-
-
-	private File[] getFileList(String dirPath, String name) {
+	// Recursive search
+	private String getFileList(String dirPath, String name) {
 		
 		File dir = new File(dirPath);   
 		File[] fileList = dir.listFiles();
 
-		if(dirPath.contains(name)){
+		List <String> maps = new ArrayList<String>();
 
-		} else {
+		boolean found = false;
+		String answer = "";
 
-			for(File f : fileList){
 
+		if(!dirPath.contains(name)){
+
+			for( File f : fileList){
+
+				//System.out.println(f.getName().equals(name));
+
+				if(f.getName().equals(name)){
+					answer = dirPath + "/" + name;
+					found = true;
+					break;
+				}
+	
+				if(!f.getName().contains(".")){
+					maps.add(f.getName());
+				}
 				
+			}
+	
+			if(found == false){
+	
+				for(String s : maps){
+	
+					answer = getFileList(dirPath + "/" + s, name);
+	
+				}
 	
 			}
-
+			return answer;
+		} else {
+			answer = dirPath;
+			return answer;
 		}
-
+		
 		
 
-
-		return fileList;
 	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
 
 
 	// Build a Response Header
@@ -357,6 +312,20 @@ public class ClientHandler implements Runnable {
 		} else if (responseCode == 403) {
 
 			sb.append("HTTP/1.1 403 Forbidden response\r\n");
+			sb.append("Date:" + getTimeStamp() + "\r\n");
+			sb.append("Server:localhost\r\n");
+			sb.append("\r\n");
+
+		} else if (responseCode == 302) {
+
+			sb.append("HTTP/1.1 302 Redirected\r\n");
+			sb.append("Date:" + getTimeStamp() + "\r\n");
+			sb.append("Server:localhost\r\n");
+			sb.append("\r\n");
+
+		} else if (responseCode == 500) {
+
+			sb.append("HTTP/1.1 500 Internal Server Error\r\n");
 			sb.append("Date:" + getTimeStamp() + "\r\n");
 			sb.append("Server:localhost\r\n");
 			sb.append("\r\n");
