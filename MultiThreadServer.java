@@ -16,6 +16,8 @@ public class MultiThreadServer {
     public void start() throws IOException, InterruptedException {
 
 		serverSocket = new ServerSocket(port);
+		System.out.println();
+		System.out.println();
 		System.out.println("Starting the socket server at port: " + port);
 
 		Socket client = null;
